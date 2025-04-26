@@ -1,7 +1,7 @@
 #!/usr/bin/bash
 
 # Installer for "Resize Images" Nautilus Script
-# Coded by: Omid Khalili <omid[dot]1985[at]gmail[dot]com>
+# Coded by: Vladislav Grigoryev <vg[dot]aetera[at]gmail[dot]com> and Omid Khalili <omid[dot]1985[at]gmail[dot]com>
 # License: GNU General Public License (GPL) version 3+
 # Description: Resize images by percentage or size using ImageMagick from Nautilus
 # Requires: bash coreutils ImageMagick nautilus zenity
@@ -16,7 +16,7 @@ echo "✍️ Writing Resize Images script..."
 cat > "$SCRIPT_PATH" << 'EOF'
 #!/usr/bin/bash
 
-# Coded by: Omid Khalili <omid[dot]1985[at]gmail[dot]com>
+# Coded by: Vladislav Grigoryev <vg[dot]aetera[at]gmail[dot]com> and Omid Khalili <omid[dot]1985[at]gmail[dot]com>
 # License: GNU General Public License (GPL) version 3+
 # Description: Resize images by percentage or size using ImageMagick from Nautilus
 # Requires: bash coreutils ImageMagick nautilus zenity
