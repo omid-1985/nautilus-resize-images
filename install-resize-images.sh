@@ -1,6 +1,10 @@
 #!/usr/bin/bash
 
 # Installer for "Resize Images" Nautilus Script
+# Coded by: Omid Khalili <omid[dot]1985[at]gmail[dot]com>
+# License: GNU General Public License (GPL) version 3+
+# Description: Resize images by percentage or size using ImageMagick from Nautilus
+# Requires: bash coreutils ImageMagick nautilus zenity
 
 SCRIPT_DIR="$HOME/.local/share/nautilus/scripts"
 SCRIPT_PATH="$SCRIPT_DIR/Resize Images"
