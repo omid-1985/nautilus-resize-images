@@ -102,7 +102,4 @@ EOF
 echo "🔓 Making the script executable..."
 chmod +x "$SCRIPT_PATH"
 
-echo "🔄 Exiting Nautilus to apply changes..."
-nautilus -q 
-
 echo "✅ Done! Now right-click an image → Scripts → Resize Images"
