@@ -1,10 +1,10 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash
 
 # Installer for "Resize Images" Nautilus Script
-# Coded by: Vladislav Grigoryev <vg[dot]aetera[at]gmail[dot]com> and Omid Khalili <omid[dot]1985[at]gmail[dot]com>
+# Author: Omid Khalili, inspired by the initial work of Vladislav Grigoryev
 # License: GNU General Public License (GPL) version 3+
-# Description: Resize images by percentage or size using ImageMagick from Nautilus
-# Requires: bash coreutils ImageMagick nautilus zenity
+# Description: Resize images by percentage or size using ImageMagick via Nautilus
+# Dependencies: bash, coreutils, ImageMagick, nautilus, zenity
 
 SCRIPT_DIR="$HOME/.local/share/nautilus/scripts"
 SCRIPT_PATH="$SCRIPT_DIR/Resize Images"
@@ -12,94 +12,98 @@ SCRIPT_PATH="$SCRIPT_DIR/Resize Images"
 echo "📂 Creating scripts directory if it doesn't exist..."
 mkdir -p "$SCRIPT_DIR"
 
-echo "✍️ Writing Resize Images script..."
+echo "✍️ Writing 'Resize Images' script..."
 cat > "$SCRIPT_PATH" << 'EOF'
-#!/usr/bin/bash
+#!/usr/bin/env bash
 
-# Coded by: Vladislav Grigoryev <vg[dot]aetera[at]gmail[dot]com> and Omid Khalili <omid[dot]1985[at]gmail[dot]com>
+# "Resize Images" Nautilus script
+# Author: Omid Khalili, inspired by Vladislav Grigoryev
 # License: GNU General Public License (GPL) version 3+
-# Description: Resize images by percentage or size using ImageMagick from Nautilus
-# Requires: bash coreutils ImageMagick nautilus zenity
+# Description: Resize images by percentage or size using ImageMagick via Nautilus
+# Dependencies: bash, coreutils, ImageMagick, nautilus, zenity
 
-IMG_PATH="${NAUTILUS_SCRIPT_SELECTED_FILE_PATHS/%$'\n'/}"
-IMG_DSIZE="1024"
-IMG_PERCENTAGES=(10% 20% 30% 40% 50% 60% 70% 80% 90%)
-IMG_SIZES=(
+IMG_PATHS="${NAUTILUS_SCRIPT_SELECTED_FILE_PATHS}"
+DEFAULT_SIZE="1024"
+PERCENT_OPTIONS=(10% 20% 30% 40% 50% 60% 70% 80% 90%)
+SIZE_OPTIONS=(
     640x480 800x600 1024x768 1280x720 1366x768
     1440x900 1600x1200 1920x1080 2560x1440 3840x2160
 )
 
-script_init() {
-    MODE=$(zenity --list \
+choose_mode() {
+    zenity --list \
         --title="Select Resize Mode" \
-        --text="Resize mode for $(wc -l <<< "${IMG_PATH}") file(s):" \
+        --text="Resize mode for $(wc -l <<< "$IMG_PATHS") file(s):" \
         --radiolist \
-        --column="Pick" --column="Mode" \
-        TRUE "Percentage" FALSE "Size")
-
-    if [ -z "$MODE" ]; then
-        return 1  # Cancelled
-    fi
-
-    if [ "$MODE" = "Percentage" ]; then
-        FORM_OUTPUT=$(zenity --forms \
-            --title="Resize by Percentage" \
-            --text="Choose a percentage:" \
-            --ok-label="Resize" \
-            --add-combo="Percentage" \
-            --combo-values="$(IFS="|"; echo "${IMG_PERCENTAGES[*]}")" \
-            --add-list="Output" \
-            --list-values="copy / default|replace") || return 1
-        IFS="|" read -r IMG_SIZE IMG_OUT <<< "$FORM_OUTPUT"
-        RESIZE_MODE="percentage"
-    elif [ "$MODE" = "Size" ]; then
-        FORM_OUTPUT=$(zenity --forms \
-            --title="Resize by Size" \
-            --text="Choose fixed size or custom dimensions:" \
-            --ok-label="Resize" \
-            --add-combo="Size" \
-            --combo-values="$(IFS="|"; echo "${IMG_SIZES[*]}")" \
-            --add-entry="Width" \
-            --add-entry="Height" \
-            --add-list="Output" \
-            --list-values="copy / default|replace") || return 1
-        IFS="|" read -r IMG_SIZE IMG_WSIZE IMG_HSIZE IMG_OUT <<< "$FORM_OUTPUT"
-        if [ -n "$IMG_WSIZE" ] || [ -n "$IMG_HSIZE" ]; then
-            IMG_SIZE="${IMG_WSIZE}x${IMG_HSIZE}"
-        fi
-        if [ -z "${IMG_SIZE/ /}" ]; then
-            IMG_SIZE="${IMG_DSIZE}x${IMG_DSIZE}"
-        fi
-        RESIZE_MODE="size"
-    else
-        return 1
-    fi
+        --column="Select" --column="Mode" \
+        TRUE "Percentage" FALSE "Size"
 }
 
-script_exec() {
-    while read -r IMG_PATH; do
-        IMG_OPATH="${IMG_PATH%/*}/resized.${IMG_PATH##*/}"
-        convert "${IMG_PATH}" -resize "${IMG_SIZE}" "${IMG_OPATH}"
-        if [ "${IMG_OUT}" = "replace" ]; then
-            mv -f "${IMG_OPATH}" "${IMG_PATH}"
-        fi
-    done <<< "${IMG_PATH}" | zenity \
-        --progress \
+resize_by_percentage() {
+    FORM_OUTPUT=$(zenity --forms \
+        --title="Resize by Percentage" \
+        --text="Select a percentage:" \
+        --ok-label="Resize" \
+        --add-combo="Percentage" \
+        --combo-values="$(IFS="|"; echo "${PERCENT_OPTIONS[*]}")" \
+        --add-list="Output Mode" \
+        --list-values="copy / default|replace") || return 1
+
+    IFS="|" read -r IMG_SIZE OUTPUT_MODE <<< "$FORM_OUTPUT"
+    RESIZE_MODE="percentage"
+}
+
+resize_by_size() {
+    FORM_OUTPUT=$(zenity --forms \
+        --title="Resize by Size" \
+        --text="Select a predefined size or enter custom dimensions:" \
+        --ok-label="Resize" \
+        --add-combo="Predefined Size" \
+        --combo-values="$(IFS="|"; echo "${SIZE_OPTIONS[*]}")" \
+        --add-entry="Width" \
+        --add-entry="Height" \
+        --add-list="Output Mode" \
+        --list-values="copy / default|replace") || return 1
+
+    IFS="|" read -r PRE_SIZE WIDTH HEIGHT OUTPUT_MODE <<< "$FORM_OUTPUT"
+    if [[ -n "$WIDTH" || -n "$HEIGHT" ]]; then
+        IMG_SIZE="${WIDTH}x${HEIGHT}"
+    else
+        IMG_SIZE="${PRE_SIZE:-${DEFAULT_SIZE}x${DEFAULT_SIZE}}"
+    fi
+    RESIZE_MODE="size"
+}
+
+process_images() {
+    while IFS= read -r FILE; do
+        OUTPUT_FILE="${FILE%/*}/resized.${FILE##*/}"
+        convert "$FILE" -resize "$IMG_SIZE" "$OUTPUT_FILE"
+        [[ "$OUTPUT_MODE" == "replace" ]] && mv -f "$OUTPUT_FILE" "$FILE"
+    done <<< "$IMG_PATHS" | zenity --progress \
         --pulsate \
         --auto-close \
         --no-cancel \
         --title="Image Resize" \
-        --text="Processing files..."
+        --text="Processing images..."
 }
 
-if script_init; then
-    script_exec
-fi
+main() {
+    MODE=$(choose_mode) || exit 1
 
+    case "$MODE" in
+        "Percentage") resize_by_percentage ;;
+        "Size")       resize_by_size ;;
+        *)            exit 1 ;;
+    esac
+
+    process_images
+}
+
+main
 exit 0
 EOF
 
-echo "🔓 Making the script executable..."
+echo "🔓 Making script executable..."
 chmod +x "$SCRIPT_PATH"
 
-echo "✅ Done! Now right-click an image → Scripts → Resize Images"
+echo "✅ Installation complete! Right-click an image → Scripts → Resize Images"
