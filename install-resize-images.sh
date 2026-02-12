@@ -9,10 +9,10 @@
 SCRIPT_DIR="$HOME/.local/share/nautilus/scripts"
 SCRIPT_PATH="$SCRIPT_DIR/Resize Images"
 
-echo "📂 Creating scripts directory if it doesn't exist..."
+echo "Creating scripts directory if it doesn't exist..."
 mkdir -p "$SCRIPT_DIR"
 
-echo "✍️ Writing 'Resize Images' script..."
+echo "Writing 'Resize Images' script..."
 cat > "$SCRIPT_PATH" << 'EOF'
 #!/usr/bin/env bash
 
@@ -103,7 +103,7 @@ main
 exit 0
 EOF
 
-echo "🔓 Making script executable..."
+echo "Making script executable..."
 chmod +x "$SCRIPT_PATH"
 
-echo "✅ Installation complete! Right-click an image → Scripts → Resize Images"
+echo "Installation complete! Right-click an image → Scripts → Resize Images"
